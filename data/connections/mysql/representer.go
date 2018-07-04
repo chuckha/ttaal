@@ -24,7 +24,6 @@ type Representer struct{}
 	+-------------+-------------------+-------------+-----------+
 */
 func (r *Representer) RepresentationFromRows(rows *sql.Rows) (*repr.Table, error) {
-
 	t := &repr.Table{
 		Fields: make([]*repr.Field, 0),
 	}
