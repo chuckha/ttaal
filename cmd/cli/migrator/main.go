@@ -24,14 +24,21 @@ func main() {
 	}
 
 	for _, table := range tables {
-		if migrator.TableExists(database, table) {
+		// create the table if it does not exist
+		if !migrator.TableExists(database, table) {
+			if err := migrator.CreateTable(table, tableToModel(table)); err != nil {
+				logger.Infof("encountered an error creating table %q: %v\n", table, err)
+			}
 			continue
 		}
 
-		if err := migrator.CreateTable(table, tableToModel(table)); err != nil {
-			logger.Infof("encountered an error creating table %q: %v\n", table, err)
+		// next table if we're up to date
+		if migrator.TableUpToDate(database, table) {
 			continue
 		}
+
+		// otherwise update the table
+
 	}
 
 	// connect to db

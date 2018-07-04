@@ -11,7 +11,8 @@ type metaQueryBuilder struct {
 }
 
 const (
-	existsQueryFormat = "select 1 from tables where table_schema = '%s' and table_name = '%s' limit 1;"
+	existsQueryFormat  = "select 1 from tables where table_schema = '%s' and table_name = '%s' limit 1;"
+	columnsQueryFormat = "select COLUMN_NAME, COLUMN_DEFAULT, IS_NULLABLE, DATA_TYPE from columns where table_schema='%s' and table_name='%s';"
 )
 
 // TableExistsQuery is the query to determine if a table is already created.
@@ -50,6 +51,11 @@ func (m *metaQueryBuilder) CreateTableQuery(tableName string, model interface{})
 	return createQuery
 }
 
+// TableDataQuery returns a query that will get the data representation of a table.
+func (m *metaQueryBuilder) TableDataQuery(database, table string) string {
+	return fmt.Sprintf(columnsQueryFormat, database, table)
+}
+
 // table is the metadata information of a table.
 // Things that relate to no particular field go here.
 // Possible additions include engine, constraints, and encoding.
@@ -63,15 +69,17 @@ type table struct {
 func (t *table) createQuery() string {
 	primaryKeys := make([]string, 0)
 	createLines := make([]string, 0)
-	createLines = append(createLines, fmt.Sprintf("CREATE TABLE %s.%s (", databaseName, t.name))
+	out := fmt.Sprintf("CREATE TABLE %s.%s (\n", databaseName, t.name)
 	for _, col := range t.cols {
 		if col.primary {
 			primaryKeys = append(primaryKeys, fmt.Sprintf("`%v`", col.name))
 		}
 		createLines = append(createLines, col.String())
 	}
-	createLines = append(createLines, fmt.Sprintf("PRIMARY KEY(%v)", strings.Join(primaryKeys, ",")))
-	return strings.Join(createLines, ",\n") + "\n)"
+	if len(primaryKeys) > 0 {
+		createLines = append(createLines, fmt.Sprintf("PRIMARY KEY(%v)", strings.Join(primaryKeys, ",")))
+	}
+	return out + strings.Join(createLines, ",\n") + "\n)"
 }
 
 // col is one column in a table.
