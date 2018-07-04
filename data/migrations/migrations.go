@@ -2,25 +2,25 @@ package migrations
 
 import (
 	"database/sql"
+
+	"github.com/chuckha/ttaal/data/storage"
 )
 
-// Database are the functions required to interact with a database
-type Database interface {
-	Exec(string, ...interface{}) (sql.Result, error)
-}
-
+// MigratorDatabase extends the typical storage.Database interface.
+// Another way to think about it is that it's the same as a storage.Database but with an extended set of functions.
+// I expect storage.Database will have all of these methods and this interface can collapse.
 type MigratorDatabase interface {
-	Database
+	storage.Database
 	QueryRow(string, ...interface{}) *sql.Row
 }
 
-// Migrator is a thing to help you with db migrations
+// Migrator ties together the connection and the query builder.
 type Migrator struct {
 	Database         MigratorDatabase
 	MetaQueryBuilder MetaQueryBuilder
 }
 
-// MetaQueryBuilder are the required methods for generating meta queries (questions about the database/tables themselves)
+// MetaQueryBuilder describes the behavior required for generating metaqueries (questions about the database/tables themselves).
 type MetaQueryBuilder interface {
 	TableExistsQuery(string, string) string
 	CreateTableQuery(string, interface{}) string
@@ -34,7 +34,7 @@ func New(db MigratorDatabase, mqb MetaQueryBuilder) *Migrator {
 	}
 }
 
-// TableExists tells us if a table exists or not
+// TableExists returns true if the table exists and false if it does not.
 func (m *Migrator) TableExists(db, tableName string) bool {
 	query := m.MetaQueryBuilder.TableExistsQuery(db, tableName)
 	row := m.Database.QueryRow(query)
@@ -42,7 +42,7 @@ func (m *Migrator) TableExists(db, tableName string) bool {
 	return row.Scan(&out) == nil
 }
 
-// CreateTable creates a table
+// CreateTable generates a create table query and executes it.
 func (m *Migrator) CreateTable(tableName string, instance interface{}) error {
 	query := m.MetaQueryBuilder.CreateTableQuery(tableName, instance)
 	_, err := m.Database.Exec(query)

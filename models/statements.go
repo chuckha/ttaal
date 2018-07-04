@@ -27,15 +27,3 @@ func NewStatement(statement string, pollID int64, isALie bool) *Statement {
 		Statement: statement,
 	}
 }
-
-// func CreateStatementsTable(db Execer) error {
-// 	_, err := db.Exec(`CREATE TABLE statements (
-// 		id INT PRIMARY KEY AUTO_INCREMENT,
-// 		poll_id INT,
-// 		is_a_lie TINYINT,
-// 		statement TEXT,
-// 		created TIMESTAMP,
-// 		updated TIMESTAMP
-// 		)`)
-// 	return err
-// }

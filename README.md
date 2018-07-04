@@ -1,6 +1,18 @@
 # Two Truths and a Lie
 
+## Internal ORM
+
+The interesting part of this codebase is the internal ORM.
+
+## CLI
+
+### Migrator
+
+The migrator will look at structs and generate queries for the configured backend to migrate (create, update) database tables.
+
 ## Models
+
+Note: this section is likely out of date
 
 Poll has many options
 Options have many votes

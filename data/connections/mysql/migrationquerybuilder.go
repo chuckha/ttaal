@@ -14,13 +14,14 @@ const (
 	existsQueryFormat = "select 1 from tables where table_schema = '%s' and table_name = '%s' limit 1;"
 )
 
+// TableExistsQuery is the query to determine if a table is already created.
 func (m *metaQueryBuilder) TableExistsQuery(db, table string) string {
 	q := fmt.Sprintf(existsQueryFormat, db, table)
 	m.logger.Debugln("Exists query:", q)
 	return q
 }
 
-// CreateTableQuery returns the create table query for the instance type
+// CreateTableQuery returns the create table query for the model type.
 func (m *metaQueryBuilder) CreateTableQuery(tableName string, model interface{}) string {
 	tab := &table{
 		name: tableName,
@@ -61,16 +62,16 @@ type table struct {
 // All necessary information to build the create table statement is available to this function.
 func (t *table) createQuery() string {
 	primaryKeys := make([]string, 0)
-	createStmts := make([]string, 0)
-	out := fmt.Sprintf("CREATE TABLE %s.%s (\n", databaseName, t.name)
+	createLines := make([]string, 0)
+	createLines = append(createLines, fmt.Sprintf("CREATE TABLE %s.%s (", databaseName, t.name))
 	for _, col := range t.cols {
 		if col.primary {
 			primaryKeys = append(primaryKeys, fmt.Sprintf("`%v`", col.name))
 		}
-		createStmts = append(createStmts, col.String())
+		createLines = append(createLines, col.String())
 	}
-	createStmts = append(createStmts, fmt.Sprintf("PRIMARY KEY(%v)", strings.Join(primaryKeys, ",")))
-	return out + strings.Join(createStmts, ",\n") + "\n)"
+	createLines = append(createLines, fmt.Sprintf("PRIMARY KEY(%v)", strings.Join(primaryKeys, ",")))
+	return strings.Join(createLines, ",\n") + "\n)"
 }
 
 // col is one column in a table.
@@ -83,8 +84,8 @@ type col struct {
 	options      map[string]string
 }
 
-// current idea is to pass the type and tags into this function then i can initialize and get
-// defaults and stuff all in one go here.
+// newCol creates and configures a col struct from a reflect.Type.
+// Anything that is a function of the type of field can go in here. For example, default value.
 func newCol(sf reflect.Type) *col {
 	return &col{
 		// start with defaults, override in add
@@ -95,6 +96,7 @@ func newCol(sf reflect.Type) *col {
 	}
 }
 
+// Add configures a col based on the struct tag passed in.
 func (c *col) Add(tag string) {
 	switch tag {
 	case "primary":
@@ -108,6 +110,7 @@ func (c *col) Add(tag string) {
 	}
 }
 
+// String turns a configured col into a single line to be embedded in a create table query.
 func (c *col) String() string {
 	out := make([]string, 0)
 	out = append(out, fmt.Sprintf("`%v`", c.name))
@@ -130,6 +133,7 @@ func (c *col) String() string {
 	return strings.Join(out, " ")
 }
 
+// reflectTypeToDefaultValue takes a go type and returns the default value for mysql.
 func reflectTypeToDefaultValue(t reflect.Type) string {
 	switch t.Kind() {
 	case reflect.Int64, reflect.Bool:
@@ -153,6 +157,8 @@ func reflectTypeToDefaultValue(t reflect.Type) string {
 	}
 }
 
+// reflectTypeToMySQLType converts a go type to a mysql type.
+// There is some funky printing in here.
 func reflectTypeToMySQLType(t reflect.Type) string {
 	switch t.Kind() {
 	case reflect.Int64:
@@ -177,12 +183,3 @@ func reflectTypeToMySQLType(t reflect.Type) string {
 		}
 	}
 }
-
-// 	_, err := db.Exec(`CREATE TABLE statements (
-// 		id INT PRIMARY KEY AUTO_INCREMENT,
-// 		poll_id INT,
-// 		is_a_lie TINYINT,
-// 		statement TEXT,
-// 		created TIMESTAMP,
-// 		updated TIMESTAMP
-// 		)`)

@@ -1,26 +1,35 @@
 package storage
 
-import "fmt"
+import (
+	"database/sql"
+	"fmt"
+)
 
-// Creatable are the functions necessary to be able to call Storage.Create
+// Database is the direct connection to a database backend.
+type Database interface {
+	Exec(string, ...interface{}) (sql.Result, error)
+}
+
+// Creatable is the set of behaviors for generating a Create statement.
 type Creatable interface {
 	Table() string
 	Fields() []string
 	Values() []interface{}
 }
 
-// QueryBuilder is what each implementation must implement to build queries in their language
+// QueryBuilder describes the types of queries the implementor needs to implement.
+// Each implementation is specific to the sql backend.
 type QueryBuilder interface {
 	Create(Creatable) string
 }
 
-// Storage is the struct with the storing methods
+// Storage ties together the connection and the query builder.
 type Storage struct {
 	Database
 	QueryBuilder
 }
 
-// New returns a struct with the methods to interact with a db
+// New returns a configured Storage.
 func New(db Database, qb QueryBuilder) *Storage {
 	return &Storage{
 		Database:     db,
@@ -28,7 +37,8 @@ func New(db Database, qb QueryBuilder) *Storage {
 	}
 }
 
-// Create will save the object without making sure it exists returning the last inserted id and an error.
+// Create saves the creatable and returns the id of the newly created object.
+// Create does assumes creatable does not exist.
 func (s *Storage) Create(creatable Creatable) (int64, error) {
 	query := s.QueryBuilder.Create(creatable)
 	r, err := s.Exec(query, creatable.Values()...)

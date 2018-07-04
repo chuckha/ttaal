@@ -7,7 +7,6 @@ import (
 	"github.com/chuckha/ttaal/data/migrations"
 	"github.com/chuckha/ttaal/data/storage"
 
-	// import the mysql driver
 	_ "github.com/go-sql-driver/mysql"
 )
 
@@ -29,6 +28,7 @@ func dsn(database string) string {
 	return fmt.Sprintf("%s:%s@tcp(%s:%d)/%s", databaseUser, databasePassword, databaseHost, databasePort, database)
 }
 
+// conn opens a connection to the database or crashes.
 func conn(dsn string) *sql.DB {
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
@@ -37,7 +37,7 @@ func conn(dsn string) *sql.DB {
 	return db
 }
 
-// Storage returns a storage implementation with mysql as the underlying store
+// Storage returns a storage.Storage implementation with mysql as the underlying store.
 func Storage(log logger) *storage.Storage {
 	details := dsn(databaseName)
 	log.Debugln("Connecting to:", details)
@@ -45,13 +45,14 @@ func Storage(log logger) *storage.Storage {
 	return storage.New(db, &queryBuilder{log})
 }
 
-// Migrations returns a migrator for mysql
-// Migrations require different permissions from above since this queries mysql tables directly
+// Migrations returns a migrator for mysql.
+// Migrations require different permissions from above since this queries mysql system tables.
 func Migrations(log logger) *migrations.Migrator {
 	mqb := &metaQueryBuilder{log}
 	return migrations.New(conn(dsn(metadatabaseName)), mqb)
 }
 
+// logger is our internal interface for the logging functions this package uses.
 type logger interface {
 	Debugf(string, ...interface{})
 	Debugln(...interface{})
