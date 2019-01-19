@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/chuckha/ttaal/data/connections/mysql"
+	"github.com/chuckha/modeler/connections/mysql"
 	"github.com/chuckha/ttaal/log"
 	"github.com/chuckha/ttaal/models"
 )
